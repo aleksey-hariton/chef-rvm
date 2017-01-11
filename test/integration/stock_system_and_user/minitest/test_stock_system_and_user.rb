@@ -39,7 +39,7 @@ describe "A system installation" do
   end
 
   it "sources into environment" do
-    assert_nil exec_with_env("bash -lc 'type rvm 1>/dev/null 2>&1'").error!
+    assert_nil exec_with_env("bash -lc ' 1>/dev/null 2>&1'").error!
   end
 
   it "installs 2.1.3" do

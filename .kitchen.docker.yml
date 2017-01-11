@@ -94,3 +94,10 @@ suites:
 - name: smoke
   run_list:
     - 'recipe[rvm_test::smoke]'
+  attributes:
+    rvm:
+      version: 1.28.0
+      user_installs:
+      - user: teddy
+        version: 1.26.0
+        default_ruby: 1.8.7
