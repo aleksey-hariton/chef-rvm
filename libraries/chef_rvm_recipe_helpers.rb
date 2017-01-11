@@ -73,8 +73,12 @@ class Chef
         install_command = "curl -L #{opts[:installer_url]} | bash #{opts[:script_flags]}"
         install_user = opts[:user] || "root"
 
-        execute 'gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3' do
-          not_if 'gpg2 -k | grep D39DC0E3'
+        exec_env['GNUPGHOME'] = '/etc/gnupg'
+
+        execute "gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3" do
+          user    install_user
+          environment(exec_env)
+          not_if "gpg2 --homedir #{exec_env['GNUPGHOME']} -k | grep D39DC0E3"
         end.run_action(:run)
 
         i = execute exec_name do
