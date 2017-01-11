@@ -31,10 +31,9 @@ if node['rvm']['group_id'] != 'default'
 end
 
 key_server = node['rvm']['gpg']['keyserver']
-home_dir = node['rvm']['gpg']['homedir']
 
 execute 'Adding gpg key' do
-  command "`which gpg2 || which gpg` --keyserver #{key_server} --homedir #{home_dir} --recv-keys #{node['rvm']['gpg']['key']}"
+  command "`which gpg2 || which gpg` --keyserver #{key_server} --recv-keys #{node['rvm']['gpg']['key']}"
   only_if 'which gpg2 || which gpg'
   not_if { node['rvm']['gpg']['key'].empty? }
 end
