@@ -1,32 +1,69 @@
 #!/usr/bin/env rake
 
-require 'foodcritic'
-require 'rake/testtask'
+require_relative 'tasks/maintainers'
 
+# Style tests. cookstyle (rubocop) and Foodcritic
+namespace :style do
+  begin
+    require 'cookstyle'
+    require 'rubocop/rake_task'
+
+    desc 'Run Ruby style checks'
+    RuboCop::RakeTask.new(:ruby)
+  rescue LoadError => e
+    puts ">>> Gem load error: #{e}, omitting style:ruby" unless ENV['CI']
+  end
+
+  begin
+    require 'foodcritic'
+
+    desc 'Run Chef style checks'
+    FoodCritic::Rake::LintTask.new(:chef) do |t|
+      t.options = {
+          fail_tags: ['any'],
+          progress: true,
+      }
+    end
+  rescue LoadError
+    puts ">>> Gem load error: #{e}, omitting style:chef" unless ENV['CI']
+  end
+end
+
+desc 'Run all style checks'
+task style: ['style:chef', 'style:ruby']
+
+# ChefSpec
 begin
-  require 'emeril/rake'
-rescue LoadError
-  puts ">>>>> Emeril gem not loaded, omitting tasks" unless ENV['CI']
+  require 'rspec/core/rake_task'
+
+  desc 'Run ChefSpec examples'
+  RSpec::Core::RakeTask.new(:spec)
+rescue LoadError => e
+  puts ">>> Gem load error: #{e}, omitting spec" unless ENV['CI']
 end
 
-# FC041 is excluded because we want to preserve the official RVM installation
-# process as much as possible, i.e. using curl to download the installer.
-FoodCritic::Rake::LintTask.new do |t|
-  t.options = { :fail_tags => ['any'], :tags => ['~FC041'] }
+# Integration tests. Kitchen.ci
+namespace :integration do
+  begin
+    require 'kitchen/rake_tasks'
+
+    desc 'Run kitchen integration tests'
+    Kitchen::RakeTasks.new
+  rescue StandardError => e
+    puts ">>> Kitchen error: #{e}, omitting #{task.name}" unless ENV['CI']
+  end
 end
 
+namespace :supermarket do
+  begin
+    require 'stove/rake_task'
 
-Rake::TestTask.new do |t|
-  t.name = "unit"
-  t.test_files = FileList['test/unit/**/*_spec.rb']
-  t.verbose = true
+    desc 'Publish cookbook to Supermarket with Stove'
+    Stove::RakeTask.new
+  rescue LoadError => e
+    puts ">>> Gem load error: #{e}, omitting #{task.name}" unless ENV['CI']
+  end
 end
 
-begin
-  require 'kitchen/rake_tasks'
-  Kitchen::RakeTasks.new
-rescue LoadError
-  puts ">>>>> Kitchen gem not loaded, omitting tasks" unless ENV['CI']
-end
-
-task :default => [:foodcritic, :unit]
+# Default
+task default: %w(style spec)
